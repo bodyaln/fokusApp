@@ -1,8 +1,6 @@
 // Вся работа с Supabase в одном месте. Остальной код вызывает только эти функции.
 import { supabase } from './supabase'
 
-const BUCKET = 'media'
-
 // ---------- вход ----------
 export async function getSession() {
   const { data } = await supabase.auth.getSession()
@@ -49,7 +47,7 @@ export async function updateTrack(id, patch) {
 
 export async function deleteTrack(row) {
   const files = [row.audio_path, row.cover_path].filter(Boolean)
-  if (files.length) await supabase.storage.from(BUCKET).remove(files)
+  if (files.length) await media('delete', files).catch((e) => console.warn('[db] файлы не удалились', e))
   const { error } = await supabase.from('tracks').delete().eq('id', row.id)
   if (error) throw error
 }
@@ -63,12 +61,24 @@ export function subscribeTracks(cb) {
   return () => supabase.removeChannel(ch)
 }
 
-// Временные ссылки на приватные файлы (аудио, обложки). paths -> { path: url }
-export async function signUrls(paths, seconds = 60 * 60 * 24) {
+// Файлы лежат в приватном Cloudflare R2. Ссылки на них выдаёт наша функция /api/media на Vercel:
+// она проверяет, что ты вошёл, и подписывает только твои файлы.
+async function media(action, paths) {
+  const { data } = await supabase.auth.getSession()
+  const res = await fetch('/api/media', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.session?.access_token ?? ''}` },
+    body: JSON.stringify({ action, paths }),
+  })
+  const json = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(json.error || `Ошибка /api/media (${res.status})`)
+  return json
+}
+
+// Временные ссылки на файлы (аудио, обложки), действуют 24 часа. paths -> { path: url }
+export async function signUrls(paths) {
   if (!paths.length) return {}
-  const { data, error } = await supabase.storage.from(BUCKET).createSignedUrls(paths, seconds)
-  if (error) throw error
-  return Object.fromEntries(data.filter((d) => d.signedUrl).map((d) => [d.path, d.signedUrl]))
+  return (await media('sign', paths)).urls
 }
 
 // ---------- сессии таймера ----------

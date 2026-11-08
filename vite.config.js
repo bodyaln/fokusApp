@@ -5,10 +5,9 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react()],
   server: {
-    // запросы к API и файлам музыки уходят на наш сервер (npm run server)
+    // /api/media (ссылки на файлы в R2) работает на Vercel — при локальной разработке ходим туда
     proxy: {
-      '/api': 'http://localhost:8787',
-      '/media': 'http://localhost:8787',
+      '/api': { target: 'https://fokus-app-two.vercel.app', changeOrigin: true },
     },
   },
 })

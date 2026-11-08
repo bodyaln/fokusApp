@@ -4,9 +4,10 @@
 // плюс на всякий случай проверяет очередь раз в 30 секунд.
 //
 // Запуск: npm run worker
-// Нужно: brew install yt-dlp ffmpeg  и файл server/.env:
-//   SUPABASE_URL=https://....supabase.co
-//   SUPABASE_SECRET_KEY=sb_secret_...   (Project Settings -> API Keys -> Secret key)
+// Нужно: brew install yt-dlp ffmpeg  и файл server/.env (шаблон: server/.env.example):
+//   SUPABASE_URL, SUPABASE_SECRET_KEY — база (список треков)
+//   R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET — где хранить аудио (Cloudflare R2)
+// Если R2 не настроен, файлы идут в Supabase Storage (там лимит 50 МБ на файл, длинные треки пережимаются).
 
 import { createClient } from '@supabase/supabase-js'
 import { spawn } from 'node:child_process'
@@ -14,6 +15,7 @@ import { mkdtemp, readdir, readFile, rm, stat } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { r2FromEnv } from '../api/_r2.js'
 
 const BUCKET = 'media'
 const MAX_BYTES = (Number(process.env.MAX_MB) || 45) * 1024 * 1024 // бесплатный Supabase принимает файлы до 50 МБ — оставляем запас
@@ -70,7 +72,7 @@ async function fitSize(file, duration) {
   return out
 }
 
-export async function processJob(sb, job) {
+export async function processJob(sb, job, r2 = null) {
   log(`↓ ${job.source_url}`)
   const dir = await mkdtemp(path.join(tmpdir(), 'focusos-'))
   try {
@@ -80,10 +82,16 @@ export async function processJob(sb, job) {
     const coverName = files.find((f) => f.startsWith('cover.'))
     if (!audioName) throw new Error('Звук не скачался')
     const duration = Math.round(info.duration || 0)
-    const audioFile = await fitSize(path.join(dir, audioName), duration)
+    // В R2 лимита на размер нет — оставляем исходное качество (~128 kbps).
+    // В Supabase Storage — пережимаем, если не влезает в 50 МБ.
+    const audioFile = r2 ? path.join(dir, audioName) : await fitSize(path.join(dir, audioName), duration)
 
     const base = `${job.user_id}/${job.youtube_id}`
     const up = async (name, file, contentType) => {
+      if (r2) {
+        await r2.put(name, await readFile(file), contentType)
+        return name
+      }
       const { error } = await sb.storage.from(BUCKET).upload(name, await readFile(file), { contentType, upsert: true })
       if (error) throw new Error(`Загрузка в Storage: ${error.message}`)
       return name
@@ -122,7 +130,7 @@ export async function claimNext(sb) {
   return taken?.[0] ?? (await claimNext(sb)) // кто-то успел раньше — берём следующий
 }
 
-export function createWorker(sb) {
+export function createWorker(sb, r2 = null) {
   let busy = false
   let again = false
   const tick = async () => {
@@ -132,7 +140,7 @@ export function createWorker(sb) {
       do {
         again = false
         let job
-        while ((job = await claimNext(sb))) await processJob(sb, job)
+        while ((job = await claimNext(sb))) await processJob(sb, job, r2)
       } while (again)
     } catch (e) {
       log('ошибка очереди:', e.message)
@@ -154,7 +162,9 @@ async function main() {
   // Если качалку закрыли посреди скачивания — вернуть такие треки в очередь
   await sb.from('tracks').update({ status: 'queued' }).eq('status', 'downloading')
 
-  const w = createWorker(sb)
+  const r2 = r2FromEnv()
+  log(r2 ? 'аудио храню в Cloudflare R2' : 'R2 не настроен — аудио храню в Supabase Storage')
+  const w = createWorker(sb, r2)
   sb.channel('worker')
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tracks' }, () => w.tick())
     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tracks', filter: 'status=eq.queued' }, () => w.tick())

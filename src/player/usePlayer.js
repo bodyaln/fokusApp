@@ -154,6 +154,12 @@ export function usePlayer(tracks) {
     loadTrack(t, true)
   }, [loadTrack])
 
+  // Включить трек по id (удобно, когда список на экране отличается от очереди плеера)
+  const playId = useCallback((id) => {
+    const i = tracksRef.current.findIndex((t) => t.id === id)
+    if (i >= 0) playAt(i)
+  }, [playAt])
+
   // Media Session: название и кнопки на экране блокировки / в системных контролах
   useEffect(() => {
     if (!track || !('mediaSession' in navigator)) return
@@ -178,7 +184,7 @@ export function usePlayer(tracks) {
 
   return {
     track, index, playing, currentTime, duration, buffering, muted, repeat, error,
-    toggle, play, pause, next, prev, seek, skip, toggleMute, cycleRepeat, playAt,
+    toggle, play, pause, next, prev, seek, skip, toggleMute, cycleRepeat, playAt, playId,
   }
 }
 

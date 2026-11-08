@@ -8,9 +8,11 @@
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "server": "node --watch server/index.js"
+    "server": "node --watch server/index.js",
+    "worker": "node --env-file=server/.env server/worker.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.119.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },

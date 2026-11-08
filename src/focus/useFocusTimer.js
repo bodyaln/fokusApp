@@ -23,9 +23,13 @@ const initial = { modeId: 'stopwatch', status: 'idle', startedAt: null, accumula
 
 // Время считается от отметки startedAt, а не счётчиком секунд.
 // Поэтому если закрыть Mini App и открыть через час, таймер покажет правильное время.
-export function useFocusTimer({ onComplete } = {}) {
+// remote (необязательно): { load(): Promise<sessions>, save(session): Promise } — хранение сессий на сервере
+export function useFocusTimer({ onComplete, remote } = {}) {
   const onCompleteRef = useRef(onComplete)
   onCompleteRef.current = onComplete
+  const remoteRef = useRef(remote)
+  remoteRef.current = remote
+  const recorded = useRef(new Set()) // старты сессий, уже записанные в этом запуске приложения
   const [state, setState] = useState(() => {
     const s = read(STATE_KEY, initial)
     return MODES.some((m) => m.id === s.modeId) ? s : { ...s, modeId: initial.modeId }
@@ -40,6 +44,20 @@ export function useFocusTimer({ onComplete } = {}) {
 
   useEffect(() => write(STATE_KEY, state), [state])
   useEffect(() => write(SESSIONS_KEY, sessions), [sessions])
+
+  // Сессии с сервера: на всех устройствах одинаковая статистика
+  useEffect(() => {
+    const r = remoteRef.current
+    if (!r) return
+    r.load()
+      .then((list) => setSessions((local) => {
+        const have = new Set(list.map((x) => x.start))
+        // плюс то, что записали только что и сервер ещё не вернул
+        const fresh = local.filter((x) => recorded.current.has(x.start) && !have.has(x.start))
+        return [...list, ...fresh]
+      }))
+      .catch((e) => console.warn('[timer] не удалось загрузить сессии', e))
+  }, [])
 
   useEffect(() => {
     if (state.status !== 'running') return
@@ -56,11 +74,13 @@ export function useFocusTimer({ onComplete } = {}) {
   // второй раз не добавляем (защита от двойного вызова)
   const record = useCallback((ms, s) => {
     const start = s.sessionStart ?? Date.now() - ms
+    if (recorded.current.has(start)) return
+    recorded.current.add(start)
+    const session = { start, ms, mode: s.modeId }
     setSessions((list) =>
-      list.some((x) => x.start === start)
-        ? list
-        : [...list, { start, ms, mode: s.modeId }].slice(-1000),
+      list.some((x) => x.start === start) ? list : [...list, session].slice(-1000),
     )
+    remoteRef.current?.save(session).catch((e) => console.warn('[timer] не удалось сохранить сессию', e))
   }, [])
 
   const start = useCallback(() => {

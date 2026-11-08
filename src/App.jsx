@@ -5,68 +5,47 @@ import MusicScreen from './music/MusicScreen'
 import FullPlayer from './music/FullPlayer'
 import { useFocusTimer } from './focus/useFocusTimer'
 import { MiniPlayer, BottomNav } from './layout/Shell'
-import { demoTracks } from './tracks'
-import { deleteTrackOnServer, downloadTrack, fetchTracks, youtubeId } from './music/api'
+import AuthScreen from './auth/AuthScreen'
+import { useLibrary } from './music/useLibrary'
+import * as db from './lib/db'
 
 const load = (k, f) => { try { return JSON.parse(localStorage.getItem(k)) ?? f } catch { return f } }
 const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)) } catch {} }
 
+const remoteSessions = {
+  load: () => db.listSessions(Date.now() - 8 * 86400000),
+  save: db.insertSession,
+}
+
+// Сначала проверяем вход. Без аккаунта — экран входа, с аккаунтом — приложение.
 export default function App() {
+  const [session, setSession] = useState(undefined) // undefined = ещё проверяем
+  useEffect(() => {
+    db.getSession().then(setSession)
+    return db.onAuthChange(setSession)
+  }, [])
+  if (session === undefined) return null
+  if (!session) return <AuthScreen />
+  return <Main key={session.user.id} />
+}
+
+function Main() {
   const [tab, setTab] = useState(() => load('ui:tab', 'focus'))
   const [playerOpen, setPlayerOpen] = useState(false)
   const closePlayer = useCallback(() => setPlayerOpen(false), [])
-  // Библиотека треков. Хранится в браузере; скачанные треки дополнительно лежат на сервере
-  const [tracks, setTracks] = useState(() => load('tracks', demoTracks))
-  useEffect(() => save('tracks', tracks), [tracks])
 
-  // При запуске подтягиваем с сервера треки, которых ещё нет в списке (например, скачанные с другого устройства)
-  useEffect(() => {
-    fetchTracks()
-      .then((server) => setTracks((list) => {
-        const have = new Set(list.map((t) => t.id))
-        const extra = server.filter((t) => !have.has(t.id))
-        return extra.length ? [...extra, ...list] : list
-      }))
-      .catch(() => {}) // сервер не запущен: просто работаем с тем, что есть
-  }, [])
-
-  // Треки, которые сейчас качаются: показываем их в списке с крутилкой
-  const [pending, setPending] = useState([])
-
-  const addTrack = async (url) => {
-    const id = youtubeId(url)
-    if (tracks.some((t) => t.id === id)) throw new Error('Этот трек уже в списке')
-    if (pending.some((t) => t.id === id)) throw new Error('Этот трек уже скачивается')
-    setPending((list) => [{ id, url, cover: `https://i.ytimg.com/vi/${id}/mqdefault.jpg` }, ...list])
-    try {
-      const track = await downloadTrack(url)
-      setTracks((list) => [track, ...list.filter((t) => t.id !== track.id)])
-    } finally {
-      setPending((list) => list.filter((t) => t.id !== id))
-    }
-  }
-
-  const deleteTrack = (id) => {
-    const t = tracks.find((x) => x.id === id)
-    setTracks((list) => list.filter((x) => x.id !== id))
-    if (t?.source) deleteTrackOnServer(id).catch(() => {}) // скачанный — удаляем и файлы на сервере
-  }
-  // Переместить трек fromId на место трека toId (перетаскивание в списке)
-  const reorderTrack = (fromId, toId) => setTracks((list) => {
-    const from = list.findIndex((t) => t.id === fromId)
-    const to = list.findIndex((t) => t.id === toId)
-    if (from < 0 || to < 0 || from === to) return list
-    const next = [...list]
-    const [moved] = next.splice(from, 1)
-    next.splice(to, 0, moved)
-    return next
-  })
-  const renameTrack = (id, title) => setTracks((list) => list.map((t) => (t.id === id ? { ...t, title } : t)))
+  // Плейлист из Supabase: один и тот же на всех устройствах
+  const lib = useLibrary(true)
 
   useEffect(() => save('ui:tab', tab), [tab])
 
-  // очередь воспроизведения = весь список
-  const queue = tracks
+  // Играть можно только скачанные треки
+  const queue = useMemo(
+    () => lib.rows
+      .filter((r) => r.status === 'ready' && r.url)
+      .map((r) => ({ id: r.id, title: r.title || 'Без названия', author: r.author, duration: r.duration, cover: r.cover, url: r.url })),
+    [lib.rows],
+  )
 
   // Высота нижней панели (мини-плеер + навигация) -> CSS-переменная --dock-h,
   // чтобы карточка сверху растягивалась ровно до неё
@@ -83,7 +62,11 @@ export default function App() {
 
   const p = usePlayer(queue)
   // Таймер вышел — музыка останавливается и возвращается в начало трека
-  const timer = useFocusTimer({ onComplete: () => { p.pause(); p.seek(0) } })
+  const timer = useFocusTimer({
+    onComplete: () => { p.pause(); p.seek(0) },
+    // статистика таймера хранится в Supabase, чтобы «сегодня/за неделю» совпадали на всех устройствах
+    remote: remoteSessions,
+  })
 
   // ---- Связка музыки и таймера ----
   // Кнопки таймера управляют и музыкой
@@ -122,7 +105,7 @@ export default function App() {
     <>
       <main className="screen screen--fit">
         {tab === 'focus' && <FocusScreen t={t} />}
-        {tab === 'music' && <MusicScreen tracks={queue} pending={pending} onAdd={addTrack} p={p} onDelete={deleteTrack} onRename={renameTrack} onReorder={reorderTrack} onOpenPlayer={() => setPlayerOpen(true)} />}
+        {tab === 'music' && <MusicScreen lib={lib} p={p} onOpenPlayer={() => setPlayerOpen(true)} />}
       </main>
       <div className="dock" ref={dockRef}>
         <div className="dock__inner">

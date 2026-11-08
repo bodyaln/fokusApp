@@ -25,3 +25,6 @@ dist-ssr
 
 # скачанная музыка
 server/media
+
+# секретный ключ качалки
+server/.env

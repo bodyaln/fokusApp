@@ -1,12 +1,18 @@
 import { useRef, useState } from 'react'
 import TrackItem from './TrackItem'
 import { useHoldToReorder } from './useHoldToReorder'
+import { signOut } from '../lib/db'
 import './music.css'
 
 // youtube.com/watch?v=..., youtu.be/..., youtube.com/shorts/..., music.youtube.com/...
 const YT_RE = /^(https?:\/\/)?((www|m|music)\.)?(youtube\.com\/(watch\?v=|shorts\/|live\/)|youtu\.be\/)[\w-]{11}/i
 
-export default function MusicScreen({ onAdd, tracks, pending = [], p, onDelete, onRename, onReorder, onOpenPlayer }) {
+export default function MusicScreen({ lib, p, onOpenPlayer }) {
+  const tracks = lib.rows
+  const onAdd = lib.add
+  const onDelete = lib.remove
+  const onRename = lib.rename
+  const onReorder = lib.reorder
   const [url, setUrl] = useState('')
   const [error, setError] = useState('')
 
@@ -22,7 +28,7 @@ export default function MusicScreen({ onAdd, tracks, pending = [], p, onDelete, 
     setError('')
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium')
     setUrl('')
-    // Скачивание идёт в фоне: можно сразу вставлять следующую ссылку
+    // Ссылка сразу попадает в список «в очереди», качалка на Маке скачает её сама
     Promise.resolve(onAdd?.(value))
       .then(() => window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success'))
       .catch((err) => {
@@ -31,10 +37,10 @@ export default function MusicScreen({ onAdd, tracks, pending = [], p, onDelete, 
       })
   }
 
-  const play = (i) => {
+  const play = (t) => {
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light')
-    if (i === p.index) p.toggle()
-    else p.playAt(i)
+    if (p.track?.id === t.id) p.toggle()
+    else p.playId(t.id)
   }
 
   // Тап по треку: включаем его и открываем плеер на весь экран
@@ -46,14 +52,15 @@ export default function MusicScreen({ onAdd, tracks, pending = [], p, onDelete, 
     onReorder: (from, to) => onReorder(tracks[from].id, tracks[to].id),
   })
 
-  const open = (i) => {
+  const open = (t) => {
     if (reorder.wasDragged()) return // отпустил после перетаскивания — плеер не открываем
-    if (i !== p.index || !p.playing) p.playAt(i)
+    if (t.status !== 'ready') return // ещё не скачан
+    if (p.track?.id !== t.id || !p.playing) p.playId(t.id)
     onOpenPlayer()
   }
 
   const remove = (t) => {
-    const ask = `Удалить «${t.title}»?`
+    const ask = `Удалить «${t.title || 'трек'}»?`
     const tg = window.Telegram?.WebApp
     // В Telegram — нативное окно подтверждения, в браузере — обычный confirm
     if (tg?.showConfirm && tg.platform !== 'unknown') tg.showConfirm(ask, (ok) => ok && onDelete(t.id))
@@ -85,28 +92,19 @@ export default function MusicScreen({ onAdd, tracks, pending = [], p, onDelete, 
     </form>
 
     <section className={`card library ${reorder.draggingIndex !== null ? 'is-sorting' : ''}`} ref={listRef}>
-      {tracks.length || pending.length ? (
+      {lib.loading ? (
+        <p className="library__empty">Загружаю список…</p>
+      ) : tracks.length ? (
         <ul className="library__list">
-          {pending.map((t) => (
-            <li key={'pending-' + t.id} className="track is-pending" aria-busy="true">
-              <span className="track__cover">
-                <img src={t.cover} alt="" onError={(e) => { e.currentTarget.style.visibility = 'hidden' }} />
-                <span className="track__spinner" aria-hidden="true" />
-              </span>
-              <span className="track__text">
-                <span className="track__title">Скачиваю…</span>
-                <span className="track__sub">{t.url.replace(/^https?:\/\/(www\.)?/, '')}</span>
-              </span>
-            </li>
-          ))}
           {tracks.map((t, i) => (
             <TrackItem
               key={t.id}
               track={t}
               current={p.track?.id === t.id}
               playing={p.playing}
-              onOpen={() => open(i)}
-              onPlay={() => play(i)}
+              onOpen={() => open(t)}
+              onPlay={() => play(t)}
+              onRetry={() => lib.retry(t.id)}
               onDelete={() => remove(t)}
               onRename={(title) => onRename(t.id, title)}
               rowProps={reorder.bind(i)}
@@ -118,6 +116,8 @@ export default function MusicScreen({ onAdd, tracks, pending = [], p, onDelete, 
       ) : (
         <p className="library__empty">Пока пусто. Вставь ссылку сверху</p>
       )}
+      {lib.error && <p className="library__error">{lib.error}</p>}
+      <button className="library__logout" onClick={() => window.confirm('Выйти из аккаунта?') && signOut()}>Выйти из аккаунта</button>
     </section>
     </>
   )

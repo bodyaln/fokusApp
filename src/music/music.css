@@ -281,3 +281,27 @@ button.track__main:active .track__cover { transform: scale(0.95); }
   .track__actions { gap: 3px; }
   .track__handle { width: 24px; }
 }
+
+/* Статусы трека: в очереди / качается / ошибка */
+.track.is-queued .track__cover img,
+.track.is-downloading .track__cover img { filter: brightness(0.5); }
+.track__spinner.is-slow { animation-duration: 2.4s; border-top-color: var(--muted); }
+.track.is-error { border-color: rgba(255, 107, 107, 0.35); }
+.track.is-error .track__sub { color: #ff8a8a; }
+.track.is-queued .track__main,
+.track.is-downloading .track__main,
+.track.is-error .track__main { cursor: default; }
+.sq-btn:disabled { opacity: 0.35; cursor: default; }
+.library__error { margin: 10px 8px 0; font-size: 13px; color: #ff8a8a; }
+.library__logout {
+  display: block;
+  margin: 14px auto 4px;
+  padding: 6px 10px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  opacity: 0.6;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}

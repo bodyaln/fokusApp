@@ -81,6 +81,21 @@ export async function signUrls(paths) {
   return (await media('sign', paths)).urls
 }
 
+// ---------- занятое место ----------
+// r2: файлы в Cloudflare R2 (только твоя папка), db: размер базы Supabase.
+// Размер базы отдаёт SQL-функция storage_usage() — если её ещё не создали, вернётся null.
+export async function getUsage() {
+  const [r2, db] = await Promise.allSettled([
+    media('usage', []),
+    supabase.rpc('storage_usage'),
+  ])
+  return {
+    r2Bytes: r2.status === 'fulfilled' ? r2.value.bytes : null,
+    r2Files: r2.status === 'fulfilled' ? r2.value.files : null,
+    dbBytes: db.status === 'fulfilled' && !db.value.error ? Number(db.value.data?.db_bytes) : null,
+  }
+}
+
 // ---------- сессии таймера ----------
 export async function listSessions(sinceMs) {
   const { data, error } = await supabase

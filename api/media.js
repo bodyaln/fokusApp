@@ -1,6 +1,7 @@
 // Vercel-функция: POST /api/media
 //   { action: 'sign',   paths: [...] } -> { urls: { path: временная ссылка на 24 ч } }
 //   { action: 'delete', paths: [...] } -> { ok: true }
+//   { action: 'usage' }                -> { bytes, files } — сколько места занимают твои файлы
 // Пускает только вошедшего пользователя и только к его файлам (путь начинается с его id).
 import { createClient } from '@supabase/supabase-js'
 import { r2FromEnv } from './_r2.js'
@@ -34,6 +35,9 @@ export async function handle({ token, body }, deps = {}) {
   if (body?.action === 'delete') {
     await r2.remove(paths)
     return [200, { ok: true }]
+  }
+  if (body?.action === 'usage') {
+    return [200, await r2.usage(userId + '/')]
   }
   return [400, { error: 'Неизвестное действие' }]
 }

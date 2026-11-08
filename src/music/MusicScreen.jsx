@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import TrackItem from './TrackItem'
 import { useHoldToReorder } from './useHoldToReorder'
 import { signOut } from '../lib/db'
+import StorageUsage from './StorageUsage'
 import './music.css'
 
 // youtube.com/watch?v=..., youtu.be/..., youtube.com/shorts/..., music.youtube.com/...
@@ -117,6 +118,7 @@ export default function MusicScreen({ lib, p, onOpenPlayer }) {
         <p className="library__empty">Пока пусто. Вставь ссылку сверху</p>
       )}
       {lib.error && <p className="library__error">{lib.error}</p>}
+      <StorageUsage refreshKey={tracks.filter((t) => t.status === 'ready').length} />
       <button className="library__logout" onClick={() => window.confirm('Выйти из аккаунта?') && signOut()}>Выйти из аккаунта</button>
     </section>
     </>

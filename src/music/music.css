@@ -1,0 +1,283 @@
+/* Строка для ссылки */
+.linkbar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 20px;
+  border-radius: 99px;
+  transition: border-color 0.2s;
+}
+.linkbar:focus-within { border-color: rgba(199, 240, 80, 0.35); }
+.linkbar.has-error { border-color: rgba(255, 107, 107, 0.5); }
+
+.linkbar__input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 16px; /* меньше 16px — iOS зумит страницу при фокусе */
+}
+.linkbar__input::placeholder { color: var(--muted); opacity: 0.7; }
+
+.linkbar__go {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 0;
+  background: var(--accent);
+  color: #1b1c10;
+  cursor: pointer;
+  transition: transform 0.12s, opacity 0.2s, background 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.linkbar__go:active { transform: scale(0.92); }
+.linkbar__go:disabled {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+  cursor: default;
+}
+
+.linkbar__error {
+  position: absolute;
+  left: 20px;
+  top: calc(100% + 6px);
+  margin: 0;
+  font-size: 13px;
+  color: #ff8a8a;
+}
+
+/* Список треков */
+.library {
+  flex: 1;
+  min-height: 0;
+  margin-top: 12px;
+  padding: 10px;
+  border-radius: 28px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.library__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.library__empty {
+  margin: 24px 0;
+  text-align: center;
+  color: var(--muted);
+}
+
+.track {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px;
+  border-radius: 22px;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.05);
+  transition: background 0.2s, border-color 0.2s;
+}
+.track.is-current {
+  background: rgba(199, 240, 80, 0.08);
+  border-color: rgba(199, 240, 80, 0.25);
+}
+
+.track__cover {
+  position: relative;
+  flex: none;
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+.track__cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* заглушка, если нет обложки */
+.track__cover i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(circle at 30% 30%, #3b5bff 0, transparent 55%),
+    radial-gradient(circle at 70% 70%, #d23c2c 0, transparent 55%),
+    #5a3a4a;
+  filter: blur(4px) saturate(120%);
+  transform: scale(1.2);
+}
+.track__eq {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 3px;
+  padding-bottom: 14px;
+  background: rgba(0, 0, 0, 0.45);
+}
+.track__eq b { width: 4px; border-radius: 2px; background: var(--accent); animation: eq 0.9s ease-in-out infinite; }
+.track__eq b:nth-child(2) { animation-delay: 0.2s; }
+.track__eq b:nth-child(3) { animation-delay: 0.4s; }
+@keyframes eq { 0%, 100% { height: 6px; } 50% { height: 22px; } }
+
+.track__title,
+.track__input {
+  flex: 1;
+  min-width: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+.track__title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.track.is-current .track__title { color: var(--accent); }
+.track__input {
+  height: 40px;
+  padding: 0 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(199, 240, 80, 0.4);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text);
+  font-family: inherit;
+  outline: 0;
+}
+
+.track__actions { flex: none; display: flex; gap: 6px; }
+.sq-btn {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  border: 1px solid var(--glass-border);
+  background: rgba(0, 0, 0, 0.18);
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 0.12s, color 0.2s, background 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.sq-btn svg { width: 22px; height: 22px; }
+.sq-btn:active { transform: scale(0.92); }
+.sq-btn--danger:hover { color: #ff8a8a; }
+.sq-btn.is-on { color: #1b1c10; background: var(--accent); border-color: transparent; }
+
+/* узкие экраны: кнопки поменьше, чтобы название влезало */
+@media (max-width: 420px) {
+  .track { gap: 10px; padding: 8px; }
+  .track__cover { width: 52px; height: 52px; border-radius: 14px; }
+  .track__title, .track__input { font-size: 16px; }
+  .sq-btn { width: 40px; height: 40px; border-radius: 12px; }
+  .sq-btn svg { width: 19px; height: 19px; }
+  .track__actions { gap: 4px; }
+}
+
+/* Обложка + название: одна большая кнопка, открывает плеер */
+.track__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: inherit;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+button.track__main:active .track__cover { transform: scale(0.95); }
+.track__cover { transition: transform 0.12s; }
+
+/* Трек, который сейчас скачивается */
+.track.is-pending { opacity: 0.85; }
+.track.is-pending .track__cover img { filter: brightness(0.55); }
+.track__spinner {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.25);
+  border-top-color: var(--accent);
+  animation: spin360 0.8s linear infinite;
+}
+@keyframes spin360 { to { transform: rotate(360deg); } }
+.track__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.track__sub {
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.is-pending .track__title {
+  background: linear-gradient(90deg, var(--muted), var(--text), var(--muted));
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 1.6s linear infinite;
+}
+@keyframes shimmer { to { background-position: -200% 0; } }
+
+/* Перетаскивание по долгому нажатию */
+.track {
+  touch-action: pan-y; /* вертикальная прокрутка списка остаётся */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none; /* без системного меню на долгое нажатие в iOS */
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+.track img { -webkit-user-drag: none; pointer-events: none; }
+.library.is-sorting .track { cursor: grabbing; }
+.track.is-dragging {
+  position: relative;
+  z-index: 2;
+  background: rgba(60, 56, 46, 0.95);
+  border-color: rgba(199, 240, 80, 0.45);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+}
+
+/* Значок ≡ для перетаскивания */
+.track__handle {
+  flex: none;
+  width: 34px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  cursor: grab;
+  touch-action: none; /* палец на значке тащит трек, а не прокручивает список */
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.2s;
+}
+.track__handle svg { width: 22px; height: 22px; }
+.track__handle:hover,
+.track.is-dragging .track__handle { color: var(--text); }
+.track.is-dragging .track__handle,
+.library.is-sorting .track__handle { cursor: grabbing; }
+@media (max-width: 420px) {
+  .track__handle { width: 28px; height: 40px; }
+  .track__handle svg { width: 20px; height: 20px; }
+}
+/* совсем узкие экраны (iPhone SE): всё ещё компактнее, чтобы название было видно */
+@media (max-width: 360px) {
+  .track { gap: 8px; }
+  .track__cover { width: 44px; height: 44px; border-radius: 12px; }
+  .sq-btn { width: 34px; height: 34px; border-radius: 10px; }
+  .sq-btn svg { width: 17px; height: 17px; }
+  .track__actions { gap: 3px; }
+  .track__handle { width: 24px; }
+}

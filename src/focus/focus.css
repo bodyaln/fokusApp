@@ -1,0 +1,479 @@
+.focus {
+    padding: 20px 14px 14px;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Свободное место между переключателями и кнопками. Круг подстраивается под него */
+.dial-wrap {
+    flex: 1;
+    min-height: 150px;
+    width: 100%;
+    container-type: size;
+    display: grid;
+    place-items: center;
+}
+.focus__title {
+    margin: 0 0 12px 8px;
+    font-size: 26px;
+    font-weight: 700;
+}
+
+/* Пилюли */
+.pill {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 52px;
+    padding: 0 16px;
+    border-radius: 99px;
+    border: 1px solid var(--glass-border);
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text);
+    font-weight: 700;
+    font-size: 16px;
+    white-space: nowrap;
+}
+.pill span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.pill svg {
+    flex: none;
+    opacity: 0.7;
+}
+.pill--select select {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    font-size: 16px; /* иначе iOS зумит страницу при фокусе */
+}
+.pill--select select:disabled {
+    cursor: default;
+}
+.pill.is-locked svg {
+    opacity: 0.25;
+}
+
+/* Статистика */
+.stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    align-items: stretch;
+}
+.stats .pill span {
+    min-width: 0;
+}
+.stat {
+    min-width: 0;
+    padding: 10px 12px;
+    border-radius: 18px;
+    border: 1px solid var(--glass-border);
+    background: rgba(0, 0, 0, 0.12);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.stat span {
+    font-size: 13px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.stat b {
+    font-size: 19px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+/* Карточка таймера */
+.timer {
+    flex: 1;
+    min-height: 0;
+    margin-top: 14px;
+    padding: 14px 14px 18px;
+    border-radius: 26px;
+    border: 1px solid var(--glass-border);
+    background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.06),
+        rgba(255, 255, 255, 0.02)
+    );
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.timer__top {
+    margin-bottom: 16px;
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+.timer__top .pill {
+    height: 48px;
+    min-width: 0;
+    font-size: 15px;
+    padding: 0 14px;
+}
+.pill--mode {
+    flex: none;
+}
+
+.dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #c9a227;
+    flex: none;
+}
+.dot.is-live {
+    background: var(--accent);
+    box-shadow: 0 0 0 0 rgba(199, 240, 80, 0.6);
+    animation: live 1.6s infinite;
+}
+@keyframes live {
+    70% {
+        box-shadow: 0 0 0 8px rgba(199, 240, 80, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(199, 240, 80, 0);
+    }
+}
+
+/* Циферблат */
+.dial {
+    position: relative;
+    /* круг занимает максимум места в .dial-wrap: меньшая из ширины и высоты */
+    width: min(100cqw, 100cqh, 360px);
+    aspect-ratio: 1;
+    transition: width 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+    border-radius: 50%;
+    background: radial-gradient(
+        circle at 50% 35%,
+        rgba(255, 255, 255, 0.16),
+        rgba(255, 255, 255, 0.05) 60%
+    );
+    box-shadow:
+        0 30px 60px rgba(0, 0, 0, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    display: grid;
+    place-items: center;
+}
+.dial__ring {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+.dial__track {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.08);
+    stroke-width: 2;
+}
+.dial__progress {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.25s linear;
+    filter: drop-shadow(0 0 4px rgba(199, 240, 80, 0.5));
+}
+/* Бегущая по кругу полоска, как секундная стрелка. Скорость: --sweep */
+.dial {
+    --sweep: 1s;
+}
+.dial__sweep {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: conic-gradient(
+        from 0deg,
+        transparent 0deg 250deg,
+        rgba(199, 240, 80, 0.05) 270deg,
+        rgba(199, 240, 80, 0.35) 330deg,
+        rgba(230, 255, 160, 0.95) 358deg,
+        transparent 360deg
+    );
+    -webkit-mask: radial-gradient(
+        circle closest-side,
+        transparent 85%,
+        #000 87%,
+        #000 98%,
+        transparent 100%
+    );
+    mask: radial-gradient(
+        circle closest-side,
+        transparent 85%,
+        #000 87%,
+        #000 98%,
+        transparent 100%
+    );
+    animation: sweep var(--sweep) linear infinite;
+    pointer-events: none;
+}
+.dial.paused .dial__sweep {
+    animation-play-state: paused;
+    opacity: 0.45;
+}
+@keyframes sweep {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.dial__face {
+    position: relative;
+    width: 84%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    background: radial-gradient(
+        circle at 50% 45%,
+        #2b2925 0%,
+        #3a3732 45%,
+        #4a4640 100%
+    );
+    box-shadow: inset 0 8px 30px rgba(0, 0, 0, 0.45);
+}
+.dial__ghost {
+    position: absolute;
+    font-size: 44px;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.35);
+    filter: blur(6px);
+    white-space: nowrap;
+    pointer-events: none;
+}
+.dial__start {
+    position: relative;
+    padding: 18px 34px;
+    border-radius: 99px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(30, 28, 25, 0.75);
+    color: var(--text);
+    font: inherit;
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    cursor: pointer;
+    transition: transform 0.12s;
+    -webkit-tap-highlight-color: transparent;
+}
+.dial__start:active {
+    transform: scale(0.95);
+}
+.dial__time {
+    /* размер цифр от размера круга, чтобы не залезали на деления */
+    font-size: calc(min(100cqw, 100cqh, 360px) * 0.21);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    white-space: nowrap;
+    justify-self: center; /* если строка шире места, выходит поровну в обе стороны, а не вправо */
+}
+.dial__time.is-long {
+    font-size: calc(min(100cqw, 100cqh, 360px) * 0.135);
+}
+.dial__time.is-paused {
+    animation: blink 1.4s ease-in-out infinite;
+}
+@keyframes blink {
+    50% {
+        opacity: 0.45;
+    }
+}
+
+.timer__actions {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 14px;
+    animation: rise 0.3s ease-out;
+}
+@keyframes rise {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+}
+.glass-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 50px;
+    padding: 0 16px;
+    border-radius: 99px;
+    border: 1px solid var(--glass-border);
+    background: rgba(0, 0, 0, 0.28);
+    color: var(--text);
+    font: inherit;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.12s;
+    -webkit-tap-highlight-color: transparent;
+}
+.glass-btn:active {
+    transform: scale(0.95);
+}
+.glass-btn--icon {
+    width: 50px;
+    padding: 0;
+    justify-content: center;
+    color: var(--muted);
+}
+/* Главная кнопка по центру, фиксированной ширины, чтобы при смене Пауза/Продолжить ничего не прыгало */
+.glass-btn--main {
+    width: 172px;
+    justify-content: center;
+}
+.glass-btn--accent {
+    color: #1b1c10;
+    background: var(--accent);
+    border-color: transparent;
+}
+
+/* Невысокие экраны (iPhone SE и т.п.) */
+@media (max-height: 700px) {
+    .focus {
+        padding-top: 14px;
+    }
+    .focus__title {
+        font-size: 22px;
+        margin-bottom: 8px;
+    }
+}
+
+/* Декор в центре круга */
+.decor {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+.decor__ticks line {
+    stroke: rgba(255, 255, 255, 0.12);
+    stroke-width: 0.5;
+    stroke-linecap: round;
+}
+.decor__ticks line.is-major {
+    stroke: rgba(255, 255, 255, 0.28);
+    stroke-width: 0.8;
+}
+.decor__ring {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.07);
+    stroke-width: 0.4;
+}
+.decor__ring--dash {
+    stroke: rgba(199, 240, 80, 0.18);
+    stroke-dasharray: 0.6 2.4;
+    transform-origin: 50px 50px;
+}
+.decor__ring--faint {
+    stroke: rgba(255, 255, 255, 0.045);
+}
+.decor__orbit {
+    fill: var(--accent);
+    opacity: 0;
+    transform-origin: 50px 50px;
+}
+
+/* Когда таймер идёт, внутренние круги медленно вращаются */
+.dial.running .decor__ring--dash {
+    animation: spin 40s linear infinite;
+}
+.dial.running .decor__orbit {
+    opacity: 0.8;
+    animation: spin 12s linear infinite reverse;
+}
+.dial.paused .decor__orbit {
+    opacity: 0.35;
+}
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Время + кнопка паузы по центру */
+.dial__hit {
+    position: relative;
+    width: 72%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 0;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+.dial__hit > * {
+    grid-area: 1 / 1;
+}
+.dial__hit .dial__time {
+    transition:
+        opacity 0.2s,
+        filter 0.2s,
+        transform 0.2s;
+}
+.dial__hit.is-paused .dial__time {
+    animation: blink 1.4s ease-in-out infinite;
+}
+.dial__overlay {
+    width: 34%;
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: rgba(20, 19, 16, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    transform: scale(0.85);
+    transition:
+        opacity 0.2s,
+        transform 0.2s;
+}
+.dial__overlay svg {
+    width: 44%;
+    height: 44%;
+}
+.dial__hit:active .dial__overlay {
+    transform: scale(0.92);
+}
+
+/* Мышь: кнопка появляется при наведении на круг. Тач: по кругу можно просто тапнуть */
+@media (hover: hover) {
+    .dial:hover .dial__overlay {
+        opacity: 1;
+        transform: scale(1);
+    }
+    .dial:hover .dial__time {
+        opacity: 0.25;
+        filter: blur(2px);
+        transform: scale(0.96);
+        animation: none;
+    }
+}
+.dial__hit:focus-visible .dial__overlay {
+    opacity: 1;
+    transform: scale(1);
+}

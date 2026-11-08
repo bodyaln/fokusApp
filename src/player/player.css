@@ -1,0 +1,225 @@
+.player,
+.tracks {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 28px;
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.player {
+  padding: 18px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.player__head {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.player__brand {
+  font-size: 13px;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+}
+
+/* Обложка */
+.player__cover {
+  width: min(62vw, 240px);
+  aspect-ratio: 1;
+  margin: 18px 0 16px;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+  transform: scale(0.94);
+  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.player__cover.is-playing { transform: scale(1); }
+.player__cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.player__cover-fallback {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  font-size: 72px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
+  background: linear-gradient(135deg, #3b2f8f, #1b1440 60%, #0c0a1f);
+}
+
+.player__meta { text-align: center; max-width: 100%; }
+.player__title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.player__author { margin: 4px 0 0; font-size: 14px; color: var(--muted); }
+
+/* Прогресс */
+.player__progress { width: 100%; margin-top: 18px; }
+.player__progress input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 22px;
+  background: transparent;
+  margin: 0;
+  cursor: pointer;
+}
+.player__progress input[type='range']::-webkit-slider-runnable-track {
+  height: 5px;
+  border-radius: 99px;
+  background: linear-gradient(to right, var(--accent) var(--progress), rgba(255, 255, 255, 0.14) var(--progress));
+}
+.player__progress input[type='range']::-moz-range-track {
+  height: 5px;
+  border-radius: 99px;
+  background: linear-gradient(to right, var(--accent) var(--progress), rgba(255, 255, 255, 0.14) var(--progress));
+}
+.player__progress input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -7.5px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 6px rgba(199, 240, 80, 0.18);
+  border: none;
+}
+.player__progress input[type='range']::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+  box-shadow: 0 0 0 6px rgba(199, 240, 80, 0.18);
+}
+.player__times {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+}
+
+/* Кнопки */
+.player__controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(6px, 2.5vw, 12px);
+  margin-top: 16px;
+}
+.btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: clamp(52px, 15vw, 64px);
+  height: clamp(52px, 15vw, 64px);
+  border-radius: 20px;
+  border: 1px solid var(--glass-border);
+  background: rgba(0, 0, 0, 0.22);
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 0.12s, background 0.2s, color 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn:active { transform: scale(0.93); }
+.btn svg { width: 22px; height: 22px; }
+.btn--sm { width: clamp(44px, 12vw, 50px); height: clamp(44px, 12vw, 50px); border-radius: 16px; }
+.btn--square { width: 46px; height: 46px; border-radius: 14px; }
+.btn--play {
+  width: clamp(70px, 20vw, 82px);
+  height: clamp(70px, 20vw, 82px);
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: radial-gradient(circle at 30% 25%, #b8c94a, #8a8a3a 55%, #9a5a2e);
+  box-shadow: 0 10px 30px rgba(160, 140, 50, 0.35);
+}
+.btn--play svg { width: 28px; height: 28px; }
+.btn.is-active { color: var(--accent); border-color: rgba(199, 240, 80, 0.4); }
+.btn.is-liked { color: #ff6b8a; border-color: rgba(255, 107, 138, 0.4); }
+.badge {
+  position: absolute;
+  top: 6px;
+  right: 7px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.player__skips { display: flex; gap: 8px; margin-top: 14px; }
+.chip {
+  border: 1px solid var(--glass-border);
+  background: rgba(0, 0, 0, 0.18);
+  color: var(--muted);
+  border-radius: 99px;
+  padding: 6px 14px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* Список треков */
+.tracks { padding: 16px 12px 10px; margin-top: 14px; }
+.tracks__title { margin: 0 8px 8px; font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.tracks ul { list-style: none; margin: 0; padding: 0; }
+.track {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.track.is-current { background: rgba(255, 255, 255, 0.07); }
+.track__thumb {
+  position: relative;
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 10px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  background: linear-gradient(135deg, #3b2f8f, #1b1440);
+}
+.track__thumb img { width: 100%; height: 100%; object-fit: cover; }
+.track__text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.track__name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.track.is-current .track__name { color: var(--accent); }
+.track__sub { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.track__dur { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* Анимация "играет" на миниатюре */
+.eq {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 3px;
+  padding-bottom: 10px;
+  background: rgba(0, 0, 0, 0.45);
+}
+.eq i { width: 4px; background: var(--accent); border-radius: 2px; animation: eq 0.9s ease-in-out infinite; }
+.eq i:nth-child(2) { animation-delay: 0.2s; }
+.eq i:nth-child(3) { animation-delay: 0.4s; }
+@keyframes eq { 0%, 100% { height: 6px; } 50% { height: 22px; } }

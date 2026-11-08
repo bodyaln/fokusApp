@@ -29,16 +29,18 @@ body {
 #root {
   max-width: 480px;
   margin: 0 auto;
-  padding: 12px 12px 0;
+  /* safe-area: на iPhone с экрана «Домой» приложение заходит под чёлку и часы */
+  --top: calc(12px + env(safe-area-inset-top));
+  padding: var(--top) 12px 0;
 }
 
 /* Экран занимает всю высоту, снизу оставляем место под панель + отступ 10px */
 .screen {
-  min-height: calc(100dvh - 12px);
+  min-height: calc(100dvh - var(--top));
   padding-bottom: calc(var(--dock-h, 180px) + 10px);
   display: flex;
   flex-direction: column;
 }
 
 /* Вкладка «Фокус» ровно в высоту экрана: круг таймера сжимается, скролла нет */
-.screen--fit { height: calc(100dvh - 12px); }
+.screen--fit { height: calc(100dvh - var(--top)); }
